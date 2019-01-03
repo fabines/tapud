@@ -7,7 +7,7 @@ from cloudant.result import QueryResult
 import pandas as pd
 
 
-def getSpecificPlot(self ,id ,db):
+def getSpecificPlot(id ,db):
     query = Query(db)
     resp = query(
         selector={"$and": [
@@ -27,7 +27,7 @@ def getSpecificPlot(self ,id ,db):
     )
     return resp
 
-def get4Years(self ,db):
+def get4Years(db):
     query = Query(db)
     resp = query(
         selector={"$and": [
