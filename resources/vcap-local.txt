@@ -1,0 +1,14 @@
+{
+  "services": {
+    "cloudantNoSQLDB": [
+      {
+        "credentials": {
+          "username":"31ca33ea-d12e-4209-a117-b3821ab3a91a-bluemix",
+          "password":"b002e14d91c7340a3acef428671ca87130901a74b7d2bf1d84e332857b17d3c1",
+          "host":"31ca33ea-d12e-4209-a117-b3821ab3a91a-bluemix.cloudant.com"
+        },
+        "label": "cloudantNoSQLDB"
+      }
+    ]
+  }
+}

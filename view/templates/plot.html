@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>{{plot.title}}</h1>
+  <small>Written by {{plot.author}} on {{plot.create_date}}</small>
+  <hr>
+  <div>
+    {{plot.body | safe}}
+  </div>
+{% endblock %}

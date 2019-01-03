@@ -1,0 +1,10 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+  <h1>Plots</h1>
+  <ul class="list-group">
+    {% for plot in plots %}
+      <li class="list-group-item"><a href="plot/{{plot['שם חלקה מפורט']}}">{{plot['שם חלקה מפורט']}}</a></li>
+    {% endfor %}
+  </ul>
+{% endblock %}
