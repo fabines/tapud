@@ -2,6 +2,7 @@ from cloudant.client import Cloudant
 import os
 import json
 from getFromDB import *
+from solver import *
 from cloudant.error import CloudantArgumentError
 from cloudant.query import Query
 from cloudant.result import QueryResult
@@ -35,6 +36,9 @@ class first_try:
         return my_database
 
     def getPlots(self,db,orders):
+        requiredArea=0
+        for order in orders:
+            requiredArea+=order['amount']
         plots= get4Years(db)
         newListPlots=[]
         for plot in plots['docs']:
@@ -46,22 +50,11 @@ class first_try:
                 potPlots.append(key)
         newListPlots = []
         for plot in potPlots:
-            newListPlots.append(getSpecificPlot(plot,db))
-        print(newListPlots)
-        #newPlots=list({v['plot']: v for v in plots['docs']}.values())
-        result=[]
-        # for plot in potPlots:
-        #     getShalhin=getSpecificPlot(plot,db)
-        #     if getShalhin['docs']:
-        #         amount=getShalhin['docs'][0]
-        #         if requiredArea>amount.get('דונם לגידול שלחין'):
-        #             result.append(amount)
-        #             requiredArea -= amount.get('דונם לגידול שלחין')
-        #         else:
-        #             amount['דונם לגידול שלחין']=requiredArea
-        #             result.append(amount)
-        #             return result
-
+            detailPlot=getSpecificPlot(plot,db)
+            if len(detailPlot['docs'])>0:
+                newListPlots.append(detailPlot['docs'][0])
+        result=solve(newListPlots,orders)
+        return result
 
 
 

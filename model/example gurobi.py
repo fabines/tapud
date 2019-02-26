@@ -35,7 +35,7 @@ try:
           [ 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ] ]
     availability = { (w,s) : A[j][i] for i,s in enumerate(Shifts)
                                      for j,w in enumerate(Workers) }
-
+    print(availability)
     # Create initial model
     model = Model("workforce5")
 

@@ -1,50 +1,74 @@
-from flask import Flask, render_template, flash, redirect, url_for, session, request, logging
-from wtforms import Form, StringField, TextAreaField, validators, IntegerField
+from flask import Flask, render_template, flash, redirect, url_for, session, request, logging, Response, jsonify
+from wtforms import Form, StringField, TextAreaField, validators, IntegerField, BooleanField, SelectField
+from wtforms.fields.html5 import DateField
+import calendar
+
 import sys
+
 sys.path.append('../')
 from model.main import *
+from model.getFromDB import *
 from passlib.hash import sha256_crypt
 from functools import wraps
 
 app = Flask(__name__)
 f = first_try()
 db = f.connection_to_database()
+species = getSpecies(db)
 List_input = []
-listOfUsers=[
+listOfUsers = [
     {
         'username': 'Admin',
         'password': sha256_crypt.encrypt(str(1234))
     }
 ]
 
+# todo insert to controller
+def createTuppleSpecies(species):
+    listTuple = []
+    for variety in species['docs']:
+        listTuple.append(tuple((variety['Variety'], variety['species'])))
+    return listTuple
+
+
+newSpecies = createTuppleSpecies(species)
+
+
 @app.route('/')
 def index():
     return render_template('home.html')
+
 
 @app.route('/about')
 def about():
     return render_template('about.html')
 
-#Single Plot
+
+# Single Plot
 @app.route('/plot/<string:id>/')
 def article(id):
     # Create cursor
-    Plot={
-            'id': 1,
-            'title':'Plot One',
-            'body':'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
-            'author':'Brad Traversy',
-            'create_date':'04-25-2017'
-        }
+    Plot = {
+        'id': 1,
+        'title': 'Plot One',
+        'body': 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+        'author': 'Brad Traversy',
+        'create_date': '04-25-2017'
+    }
     return render_template('plot.html', plot=Plot)
+
 
 # plot Form Class
 class PlotForm(Form):
-    amount =  IntegerField('Amount', [validators.required()])
-    type = StringField('Type', [validators.Length(min=4, max=25)])
-    date = StringField('Date', [validators.Length(min=6, max=50)])
-    organic = StringField('Organic', [validators.DataRequired(),
-    ])
+    amount = IntegerField('Amount', [validators.required()])
+    # type = StringField('Type', [validators.Length(min=4, max=25)])
+    default = [('1', "select species")]
+    default.extend(newSpecies)
+    type = SelectField('Type', [validators.NoneOf(['1'], message="you must select species")], choices=default)
+    date = DateField('Date', format='%Y-%m-%d')
+    organic = BooleanField('Organic', [validators.AnyOf([True, False])])
+    stav = BooleanField('Automn sowing', [validators.AnyOf([True, False])])
+
 
 def is_logged_in(f):
     @wraps(f)
@@ -54,7 +78,52 @@ def is_logged_in(f):
         else:
             flash('Unauthorized, Please login', 'danger')
             return redirect(url_for('login'))
+
     return wrap
+
+
+# table
+
+# other column settings -> http://bootstrap-table.wenzhixin.net.cn/documentation/#column-options
+columns = [
+    {
+        "field": "plot_name",  # which is the field's name of data key
+        "title": "שם חלקה",  # display as the table header's name
+        "sortable": True,
+    },
+    {
+        "field": "month2sow",
+        "title": "חודש זריעה",
+        "sortable": True,
+    },
+    {
+        "field": "species",
+        "title": "זן",
+        "sortable": True,
+    },
+    {
+        "field": "type",
+        "title": "סוג חלקה",
+        "sortable": True,
+    }
+]
+def initTableResult(plots):
+    data=[]
+    for plot in plots:
+        row={}
+        row['plot_name']=plot['שם חלקה מפורט']
+        row['month2sow']=calendar.month_name[int(plot['month'])]
+        row['species']=plot['species']
+        row['type']=plot['אורגני']
+        data.append(row)
+    return data
+
+def index(data):
+    return render_template("table.html",
+                           data=data,
+                           columns=columns,
+                           title='חלקות לזריעה')
+
 
 # order
 @app.route('/order', methods=['GET', 'POST'])
@@ -63,29 +132,34 @@ def order():
     global List_input
     form = PlotForm(request.form)
     if request.method == 'POST' and form.validate():
-        if request.form['submit_button']=='add':
-            order={}
+        if request.form['submit_button'] == 'Add':
+            order = {}
             order['amount'] = form.amount.data
             order['type'] = form.type.data
-            order['date'] = form.date.data
+            order['date'] = form.date.data.strftime('%d-%m-%Y')
             order['organic'] = form.organic.data
+            order['stav'] = form.stav.data
             List_input.append(order)
             print(List_input)
             flash('Order added successfully', 'success')
             return redirect(url_for('order'))
-        elif request.form['submit_button']=='submit':
+        elif request.form['submit_button'] == 'Submit':
             order = {}
             order['amount'] = form.amount.data
             order['type'] = form.type.data
-            order['date'] = form.date.data
+            order['date'] = form.date.data.strftime('%d-%m-%Y')
             order['organic'] = form.organic.data
+            order['stav'] = form.stav.data
             List_input.append(order)
             print(List_input)
             flash('Order added successfully', 'success')
             Plots = f.getPlots(db, List_input)
-            List_input=[]
-            return render_template('plots.html', plots=Plots)
+            List_input = []
+            data= initTableResult(Plots)
+            return index(data)
+            # return render_template('plots.html', plots=Plots)
     return render_template('order.html', form=form)
+
 
 # User login
 @app.route('/login', methods=['GET', 'POST'])
@@ -96,7 +170,7 @@ def login():
         password_candidate = request.form['password']
 
         user = list(filter(lambda person: person['username'] == username, listOfUsers))
-        print (user)
+        print(user)
         if user:
             password = user[0]['password']
             if sha256_crypt.verify(password_candidate, password):
@@ -125,5 +199,5 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.secret_key='secret123'
+    app.secret_key = 'secret123'
     app.run(debug=True)

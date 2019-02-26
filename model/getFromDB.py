@@ -25,6 +25,20 @@ def getSpecificPlot(id ,db):
         fields=["שם חלקה מפורט", "אזור גידול","_id" ,"אבנים",
                 "דונם לגידול שלחין","אורגני","מקור מים","דוררת","רגישות לקרה","גרב אבקי"],
     )
+    # selector={"$and": [
+    #         {
+    #             "_id": {
+    #                 "$eq": id
+    #             }
+    #         },
+    #         {
+    #             "סוג חלקה": {
+    #                 "$eq": "שלחין"
+    #             }
+    #         }
+    #     ]}
+    # docs = db.get_query_result(selector,fields=["שם חלקה מפורט", "אזור גידול","_id" ,"אבנים",
+    #             "דונם לגידול שלחין","אורגני","מקור מים","דוררת","רגישות לקרה","גרב אבקי"])
     return resp
 
 def get4Years(db):
@@ -52,5 +66,15 @@ def get4Years(db):
             }
         ]},
         fields=["plot"],
+    )
+    return resp
+
+def getSpecies(db):
+    query = Query(db)
+    resp = query(
+        selector={"type": {
+                    "$eq": "species"
+                }},
+        fields=["species","Variety","Skin_color","Mechanical_damage","Powdery_scab"],
     )
     return resp
