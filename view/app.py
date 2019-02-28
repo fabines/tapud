@@ -16,6 +16,7 @@ f = first_try()
 db = f.connection_to_database()
 species = getSpecies(db)
 List_input = []
+i=0
 listOfUsers = [
     {
         'username': 'Admin',
@@ -129,37 +130,57 @@ def index(data):
 @app.route('/order', methods=['GET', 'POST'])
 @is_logged_in
 def order():
-    global List_input
+    global List_input,i
     form = PlotForm(request.form)
     if request.method == 'POST' and form.validate():
         if request.form['submit_button'] == 'Add':
             order = {}
+            order['id']=i
             order['amount'] = form.amount.data
             order['type'] = form.type.data
             order['date'] = form.date.data.strftime('%d-%m-%Y')
             order['organic'] = form.organic.data
             order['stav'] = form.stav.data
             List_input.append(order)
+            i+=1
             print(List_input)
-            flash('Order added successfully', 'success')
-            return redirect(url_for('order'))
+            #flash('Order added successfully', 'success')
+            return render_template('order.html', form=form, orders=List_input)
+            #redirect(url_for('order', orders=List_input))
         elif request.form['submit_button'] == 'Submit':
             order = {}
+            order['id'] = i
             order['amount'] = form.amount.data
             order['type'] = form.type.data
             order['date'] = form.date.data.strftime('%d-%m-%Y')
             order['organic'] = form.organic.data
             order['stav'] = form.stav.data
             List_input.append(order)
+            i=0
             print(List_input)
-            flash('Order added successfully', 'success')
+            #flash('Order added successfully', 'success')
             Plots = f.getPlots(db, List_input)
             List_input = []
             data= initTableResult(Plots)
             return index(data)
             # return render_template('plots.html', plots=Plots)
-    return render_template('order.html', form=form)
+    return render_template('order.html', form=form ,orders=List_input)
 
+@app.route('/delete_order/<string:id>', methods=['POST'])
+@is_logged_in
+def delete_order(id):
+    print(id)
+    global List_input
+    #List_input = [i for i in List_input if not (i['id'] == id)]
+    for j in range(len(List_input)):
+        if List_input[j]['id'] == int(id):
+            del List_input[j]
+            break
+    #flash('order Deleted', 'success')
+    print(List_input)
+    return redirect(url_for('order', orders=List_input))
+
+    #return render_template('order.html', orders=List_input)
 
 # User login
 @app.route('/login', methods=['GET', 'POST'])

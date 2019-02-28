@@ -18,6 +18,7 @@ def solve(plots,orders):
 
     sumAndSetMonths(orders)
     sumAndSetSpecies(orders)
+    combineOrder(orders)
     global months,species
     for plot in plots:
         name=plot['_id']
@@ -35,8 +36,8 @@ def solve(plots,orders):
         if(v.x == 1.0):
             name = v.varName.split('[')
             speciesAndMonth=name[1].split(',')
-            month=speciesAndMonth[0]
-            spe=speciesAndMonth[1][:-1]
+            month = speciesAndMonth[0]
+            spe = speciesAndMonth[1][:-1]
             for plot in plots:
                 if(plot['_id'] == name[0]):
                     plot['month']=month
@@ -46,6 +47,20 @@ def solve(plots,orders):
             print(name, v.x)
     return result
 
+def combineOrder(orders):
+    toRemove=[]
+    for order in orders:
+        for order2 in orders:
+            if (order2['id']==order['id']):
+                continue
+            if(order2['id'] in toRemove or order['id'] in toRemove):
+                continue
+            if(order['organic']==order2['organic'] and order['type']==order2['type'] and order['date']==order2['date']):
+                order['amount']+=order2['amount']
+                toRemove.append(order2['id'])
+    orders[:] = [d for d in orders if d.get('id') not in toRemove]
+    print(orders)
+    return orders
 
 def sumOrganic(orders):
     global sumNotOrg,sumOrg

@@ -37,16 +37,13 @@
   </script>
 </head>
 <body>
-{% include 'includes/_navbar.html' %}
-    <div class="container">
-      {% include 'includes/_messages.html' %}
-      {% block body %}{% endblock %}
-    </div>
+  {% from "includes/_formhelpers.html" import render_field %}
+  {% include 'layout.html' %}
   <div class="container" style="padding: 10px; ">
     <h1>{{title}}</h1>
     <br/>
     <div id="toolbar"></div>
-    <table
+    <table style="background: white"
       id="table"
       data-toggle="true"
       data-toolbar="#toolbar"
