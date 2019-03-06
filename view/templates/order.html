@@ -14,9 +14,6 @@
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-
-
-
 <!--style-->
 <style type="text/css">
     body {
@@ -24,7 +21,8 @@
         color: #404E67;
         background: #F5F7FA;
 		font-family: 'Open Sans', sans-serif;
-        background-image: url('https://wpmisc.com/sites/default/files/wallpaper/nature/72715/path-green-fields-hd-wallpapers-72715-1160129.png');
+        /*background-image: url('https://wpmisc.com/sites/default/files/wallpaper/nature/72715/path-green-fields-hd-wallpapers-72715-1160129.png');*/
+        background-image: url('https://ak2.picdn.net/shutterstock/videos/1278532/thumb/1.jpg');
         background-size: cover;
 	}
 	.table-wrapper {
@@ -75,140 +73,155 @@
         position: relative;
         top: 3px;
     }
+    /* Reset */
+    .sub {
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    outline: 0;
+    -webkit-appearance: none;
+    }
+    /* Custom */
+    .sub{
+        display: inline-block;
+        position: relative;
+        /*padding: 7px 70px;*/
+        top: 0;
+        font-size: 20px;
+        display: table-cell;
+        vertical-align: middle;
+        border-radius: 2px;
+        border-bottom: 1px solid rgba(170, 255, 24, 0.5);
+        background: rgb(58, 117, 230);
+        color: #fff;
+        box-shadow: 0px 0px 0px rgba(242, 113, 178, 0.1);
 
+    /*-webkit-transform: translateZ(0);*/
+     /*-moz-transform: translateZ(0);*/
+        /*-ms-transform: translateZ(0);*/
+        /*transform: translateZ(0);*/
+        /*-webkit-transition: all 0.2s ease;*/
+        /*-moz-transition: all 0.2s ease;*/
+        /*-ms-transition: all 0.2s ease;*/
+        /*transition: all 0.2s ease;*/
+    }
 
+    .sub:active {
+        top: -10px;
+        box-shadow: 0px 10px 10px rgba( 15, 165, 60, 0.2 );
 
-/* Reset */
-.sub {
-  background: transparent;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  outline: 0;
-  -webkit-appearance: none;
-}
+  /*-webkit-transform: rotateX(20deg);*/
+     /*-moz-transform: rotateX(20deg);*/
+      /*-ms-transform: rotateX(20deg);*/
+    /*transform: rotateX(20deg);*/
+    }
 
-/* Custom */
-.sub{
-  display: inline-block;
-  position: relative;
-  /*padding: 7px 70px;*/
-  top: 0;
-  font-size: 20px;
-  display: table-cell;
-  vertical-align: middle;
-  border-radius: 2px;
-  border-bottom: 1px solid rgba(170, 255, 24, 0.5);
-  background: rgb(58, 117, 230);
-  color: #fff;
-  box-shadow: 0px 0px 0px rgba(242, 113, 178, 0.1);
-
-  -webkit-transform: translateZ(0);
-     -moz-transform: translateZ(0);
-      -ms-transform: translateZ(0);
-          transform: translateZ(0);
-
-  -webkit-transition: all 0.2s ease;
-     -moz-transition: all 0.2s ease;
-      -ms-transition: all 0.2s ease;
-          transition: all 0.2s ease;
-}
-
-.sub:hover {
-  top: -10px;
-  box-shadow: 0px 10px 10px rgba( 15, 165, 60, 0.2 );
-
-  -webkit-transform: rotateX(20deg);
-     -moz-transform: rotateX(20deg);
-      -ms-transform: rotateX(20deg);
-    transform: rotateX(20deg);
-}
-
-.sub:active {
-  top: 0px;
-  box-shadow: 0px 0px 0px rgba( 15, 165, 60, 0.0 );
-  background: rgba( 20, 224, 133, 1 );
-}
+    .sub:active {
+        top: 0px;
+        box-shadow: 0px 0px 0px rgba( 15, 165, 60, 0.0 );
+        background: rgba( 20, 224, 133, 1 );
+    }
+    .form-control {
+        height: 35px;
+        width: 200px;
+        display: inline;
+    }
+    .fontbody {
+        color: white;
+        font-weight: bold;
+        font-size: large;
+        text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+    }
+    .mar{
+        margin-left: -30px;
+    }
+    .marg{
+        margin-left: 100px;
+    }
+    .pad{
+        margin-bottom: -20px;
+    }
 
 </style>
-{% endblock %}
 
+<script type="text/javascript"></script>
+{% endblock %}
 {% block body %}
-  {% from "includes/_formhelpers.html" import render_field %}
-    {% include 'includes/_navbar.html' %}
-    {% include 'includes/_messages.html' %}
-   <h1>Plot Planning <small> Welcome  {{session.username}}</small></h1>
+{% from "includes/_formhelpers.html" import render_field %}
+{% include 'includes/_navbar.html' %}
+{% include 'includes/_messages.html' %}
+<span class="fontbody"><h1><b>Plot Planning</b> <small> Welcome  {{session.username}}</small></h1></span>
 
 <div class="row">
-<div class="col-md-3"  style="padding-left: 40px ">
-  <form method="POST" action="">
-      <label for="amount">Amount</label>
-      <input class="form-control" id="amount" name="amount" required type="text" value="">
+    <div class="col-md-3"  style="padding-left: 40px ">
+        <form method="POST" action="">
+            <div class="fontbody">
+                    <label for="amount" style="font-size: large" class="col-lg-3 pad">Amount</label>
+                    <input required type="text" class="form-control marg" name="amount" id="amount" placeholder="Enter dunam amount">
+                    {{form.variety.label (class_='col-lg-3 pad' )}} {{form.variety(class_='form-control marg')}}
+                    {{form.date.label(class_='col-lg-3 pad')}} {{form.date (class_='form-control marg')}}
+            </div>
+            <div class="container fontbody">
+                <label class="form-check-label" style="font-size: large">
+                    {{render_field(form.organic, class_="form-check")}}
+                </label>
+            </div>
+            <div>
+                <div class="radio-inline fontbody mar" style="font-size: large">
+                    {{ form.stav }}
+                    {{ form.sort }}
+                </div>
+                <!--<div class="radio-inline fontbody mar container row" style="font-size: large">-->
 
-        <div>{{render_field(form.type, class_="form-control" )}}</div>
-
-        <div>{{render_field(form.date, class_="form-control")}}</div>
-
- <div class="container">
-  <label class="form-check-label" style="font-size: large">
-    {{render_field(form.organic, class_="form-check")}}
-  </label>
-</div>
-  <div class="container">
-  <label class="form-check-label" style="font-size: large">
-      {{render_field(form.stav, class_="form-check")}}
-  </label>
-
-</div>
-    <div class="form-group container">
-      <input type="submit" name="submit_button" class="btn btn-info sub col-md-2" value="Add">
+                <!--</div>-->
+            </div>
+            <div class="form-group container">
+                <input type="submit" name="submit_button" class="btn btn-info sub col-md-2" value="Add">
+            </div>
+        </form>
+        <form method="POST" action="">
+            <div class="form-group container">
+                <input type="submit"  name="submit_button" class="btn btn-info sub col-md-2" value="Submit"/>
+            </div>
+        </form>
     </div>
-      <div class="form-group container">
-
-          <input type="submit" name="submit_button" class="btn btn-info sub col-md-2" value="Submit">
-    </div>
-  </form>
-</div>
-
-<!--table edit-->
-<div class="col-md-9">
+    <!--table edit-->
+    <div class="col-md-9">
         <div class="table-wrapper">
-            <div class="table-title">
-                    <div><h2><b>Log</b></h2></div>
+            <div class="table-title fontbody">
+                <div><h2><b>Log</b></h2></div>
             </div>
             <table class="table table-bordered">
                 <thead>
-                    <tr>
-                        <th>amount</th>
-                        <th>type</th>
-                        <th>date</th>
-                        <th>organic</th>
-                        <th>stav</th>
-                        <th>Actions</th>
-                    </tr>
+                <tr>
+                    <th>amount</th>
+                    <th>variety</th>
+                    <th>date</th>
+                    <th>organic</th>
+                    <th>season</th>
+                    <th>Actions</th>
+                </tr>
                 </thead>
                 <tbody>
-                    {% for order in orders %}
-                    <tr>
-                        <td>{{order.amount}}</td>
-                        <td>{{order.type}}</td>
-                        <td>{{order.date}}</td>
-                        <td>{{order.organic}}</td>
-                        <td>{{order.stav}}</td>
-                        <td>
-                            <form action="{{url_for('delete_order', id=order.id)}}" method="post">
-                                <!--<input type="hidden" name="_method" value="DELETE">-->
-                                <!--<input type="submit" value="Delete" class="btn btn-danger">-->
-                                <button id="btn-trash" class="delete btn-sm btn btn-danger"  value="Delete" data-toggle="tooltip"><i class="fa fa-trash-o" style="size: 15px" aria-hidden="true"></i></button>
-                            </form>
-
-                        </td>
-                    </tr>
+                {% for order in orders %}
+                <tr>
+                    <td>{{order.amount}}</td>
+                    <td>{{order.type}}</td>
+                    <td>{{order.date}}</td>
+                    <td>{{order.organic}}</td>
+                    <td>{{order.stav}}</td>
+                    <td>
+                        <form action="{{url_for('delete_order', id=order.id)}}" method="post">
+                            <button id="btn-trash" class="delete btn-sm btn btn-danger"  value="Delete" data-toggle="tooltip"><i class="fa fa-trash-o" style="size: 15px" aria-hidden="true"></i></button>
+                        </form>
+                    </td>
+                </tr>
                 {% endfor %}
                 </tbody>
             </table>
+        </div>
     </div>
-</div>
-</div>
 {% endblock %}
+</div>
 </html>

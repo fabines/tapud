@@ -1,22 +1,21 @@
-from flask import Flask, render_template, flash, redirect, url_for, session, request, logging, Response, jsonify
-from wtforms import Form, StringField, TextAreaField, validators, IntegerField, BooleanField, SelectField
+from flask import Flask, render_template, flash, redirect, url_for, session, request
+from wtforms import Form, RadioField, validators, IntegerField, BooleanField, SelectField
 from wtforms.fields.html5 import DateField
 import calendar
-
-import sys
-
-sys.path.append('../')
 from model.main import *
 from model.getFromDB import *
 from passlib.hash import sha256_crypt
 from functools import wraps
+import sys
+sys.path.append('../')
+
 
 app = Flask(__name__)
 f = first_try()
 db = f.connection_to_database()
 species = getSpecies(db)
 List_input = []
-i=0
+i = 0
 listOfUsers = [
     {
         'username': 'Admin',
@@ -25,6 +24,8 @@ listOfUsers = [
 ]
 
 # todo insert to controller
+
+
 def createTuppleSpecies(species):
     listTuple = []
     for variety in species['docs']:
@@ -65,10 +66,11 @@ class PlotForm(Form):
     # type = StringField('Type', [validators.Length(min=4, max=25)])
     default = [('1', "select species")]
     default.extend(newSpecies)
-    type = SelectField('Type', [validators.NoneOf(['1'], message="you must select species")], choices=default)
+    variety = SelectField('variety', [validators.NoneOf(['1'], message="you must select species")], choices=default)
     date = DateField('Date', format='%Y-%m-%d')
     organic = BooleanField('Organic', [validators.AnyOf([True, False])])
-    stav = BooleanField('Automn sowing', [validators.AnyOf([True, False])])
+    stav = RadioField('Stav', [validators.DataRequired()], choices=[('spring', 'spring'), ('autumn', 'autumn')])
+    sort = RadioField('Sort', [validators.DataRequired()], choices=[('sort', 'sort'), ('Direct Harvest', 'Direct Harvest')])
 
 
 def is_logged_in(f):
@@ -85,13 +87,18 @@ def is_logged_in(f):
 
 # table
 
-# other column settings -> http://bootstrap-table.wenzhixin.net.cn/documentation/#column-options
 columns = [
     {
         "field": "plot_name",  # which is the field's name of data key
         "title": "שם חלקה",  # display as the table header's name
         "sortable": True,
     },
+    {
+        "field": "amount",
+        "title": "כמות דונם",
+        "sortable": True,
+    }
+    ,
     {
         "field": "month2sow",
         "title": "חודש זריעה",
@@ -108,16 +115,23 @@ columns = [
         "sortable": True,
     }
 ]
+
+
 def initTableResult(plots):
-    data=[]
+    data = []
     for plot in plots:
-        row={}
-        row['plot_name']=plot['שם חלקה מפורט']
-        row['month2sow']=calendar.month_name[int(plot['month'])]
-        row['species']=plot['species']
-        row['type']=plot['אורגני']
+        row = {}
+        if plot['תיאור מיקום מדוייק'] is not None:
+            row['plot_name']=plot['שם חלקה מפורט']+' : '+plot['תיאור מיקום מדוייק']
+        else:
+            row['plot_name'] = plot['שם חלקה מפורט']
+        row['amount'] = plot['דונם לגידול שלחין']
+        row['month2sow'] = calendar.month_name[int(plot['month'])]
+        row['species'] = plot['species']
+        row['type'] = plot['אורגני']
         data.append(row)
     return data
+
 
 def index(data):
     return render_template("table.html",
@@ -130,59 +144,63 @@ def index(data):
 @app.route('/order', methods=['GET', 'POST'])
 @is_logged_in
 def order():
-    global List_input,i
+    global List_input, i
     form = PlotForm(request.form)
-    if request.method == 'POST' and form.validate():
-        if request.form['submit_button'] == 'Add':
-            order = {}
-            order['id']=i
-            order['amount'] = form.amount.data
-            order['type'] = form.type.data
-            order['date'] = form.date.data.strftime('%d-%m-%Y')
-            order['organic'] = form.organic.data
-            order['stav'] = form.stav.data
-            List_input.append(order)
-            i+=1
-            print(List_input)
-            #flash('Order added successfully', 'success')
-            return render_template('order.html', form=form, orders=List_input)
-            #redirect(url_for('order', orders=List_input))
-        elif request.form['submit_button'] == 'Submit':
+    if request.method == 'POST':
+        if form.validate() and request.form['submit_button'] == 'Add':
             order = {}
             order['id'] = i
             order['amount'] = form.amount.data
-            order['type'] = form.type.data
+            order['type'] = form.variety.data
             order['date'] = form.date.data.strftime('%d-%m-%Y')
             order['organic'] = form.organic.data
-            order['stav'] = form.stav.data
+            if form.stav.data == 'autumn':
+                order['stav'] = True
+            else:
+                order['stav'] = False
+            if form.sort.data == 'sort':
+                order['sort'] = True
+            else:
+                order['sort'] = False
             List_input.append(order)
-            i=0
+            i += 1
             print(List_input)
-            #flash('Order added successfully', 'success')
-            Plots = f.getPlots(db, List_input)
+            # flash('Order added successfully', 'success')
+            return render_template('order.html', form=form, orders=List_input)
+            # quest.form['submit_button'] == 'Submit':
+        if not List_input:
+            flash('You must add orders', 'danger')
+        else:
+            i = 0
+            print(List_input)
+            # flash('Order added successfully', 'success')
+            Plots = f.getPlots(db, List_input, species)
             List_input = []
-            data= initTableResult(Plots)
+            data = initTableResult(Plots)
             return index(data)
             # return render_template('plots.html', plots=Plots)
-    return render_template('order.html', form=form ,orders=List_input)
+    return render_template('order.html', form=form, orders=List_input)
+
 
 @app.route('/delete_order/<string:id>', methods=['POST'])
 @is_logged_in
 def delete_order(id):
     print(id)
     global List_input
-    #List_input = [i for i in List_input if not (i['id'] == id)]
+    # List_input = [i for i in List_input if not (i['id'] == id)]
     for j in range(len(List_input)):
         if List_input[j]['id'] == int(id):
             del List_input[j]
             break
-    #flash('order Deleted', 'success')
+    # flash('order Deleted', 'success')
     print(List_input)
     return redirect(url_for('order', orders=List_input))
 
-    #return render_template('order.html', orders=List_input)
+    # return render_template('order.html', orders=List_input)
 
 # User login
+
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':

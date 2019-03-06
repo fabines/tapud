@@ -28,14 +28,10 @@ db = my_database
 my_document = my_database.client['batya_db']
 # crops4years= self.get4Years(self, 2018, self.db)
 
-data = pd.read_csv('./resources/species.csv', encoding='windows-1255')
+data = pd.read_csv('./resources/new table.csv', encoding='windows-1255')
 
 data_json = json.loads(data.to_json(orient='records'))
 for row in data_json:
-    if row['Powdery_scab'] is not None:
-        row['Powdery_scab']=int(row['Powdery_scab'])
-    if row['Mechanical_damage'] is not None:
-        row['Mechanical_damage'] = int(row['Mechanical_damage'])
     print(row)
     db.create_document(row)
 
