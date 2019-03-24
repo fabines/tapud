@@ -242,6 +242,14 @@ def update():
     return render_template('updatePlot.html', plots=plots)
 
 
+@app.route('/edit_plot/<string:id>', methods=['POST'])
+@is_logged_in
+def edit_plot(id):
+    print(id)
+    my_document = db['julia30']
+    return redirect(url_for('order', orders=List_input))
+
+
 class idPlotForm(Form):
     idPlot = StringField('ID of plot', [validators.required(), validators.length(max=20)])
 
