@@ -22,8 +22,8 @@ def getSpecificPlot(id, db):
                 }
             }
         ]},
-        fields=["שם חלקה מפורט", "איזור גידול","_id" ,"אבנים",
-                "דונם לגידול שלחין","אורגני","מקור מים","דוררת","רגישות לקרה","תיאור מיקום מדוייק","גרב אבקי"],
+        fields=["שם חלקה מפורט", "איזור גידול", "_id","אבנים", "דונם לגידול שלחין",
+                "אורגני", "מקור מים", "דוררת", "רגישות לקרה", "תיאור מיקום מדוייק", "גרב אבקי"],
     )
     # selector={"$and": [
     #         {
@@ -42,7 +42,7 @@ def getSpecificPlot(id, db):
     return resp
 
 
-def get4Years(db):
+def get4Years(db, currentYear):
     query = Query(db)
     resp = query(
         selector={"$and": [
@@ -54,9 +54,9 @@ def get4Years(db):
             {
                 "year": {
                     "$in": [
-                        2016,
-                        2017,
-                        2018
+                        currentYear-3,
+                        currentYear-2,
+                        currentYear-1
                     ]
                 }
             },
@@ -64,6 +64,43 @@ def get4Years(db):
                 "crop": {
                     "$ne": "תפוא"
                 }
+            }
+        ]},
+        fields=["plot"],
+    )
+    return resp
+
+def getLastYear(db, currentYear):
+    query = Query(db)
+    resp = query(
+        selector={"$and": [
+            {
+                "type": {
+                    "$eq": "years"
+                }
+            },
+            {
+                "year": {
+                    "$in": [
+                        currentYear-1
+                    ]
+                }
+            },
+            {
+                "$nor": [
+               {
+                  "crop": "גזר"
+               },
+               {
+                  "crop": "סלרי"
+               },
+               {
+                  "crop": "פטרוזיליה"
+               },
+               {
+                  "crop": "תפוא"
+               }
+            ]
             }
         ]},
         fields=["plot"],
@@ -78,5 +115,15 @@ def getSpecies(db):
                     "$eq": "species"
                 }},
         fields=["species","Variety","Skin_color","Mechanical_damage","Powdery_scab"]
+    )
+    return resp
+
+
+def getAllPlots(db):
+    query = Query(db)
+    resp = query(
+        selector={"type": {
+                    "$eq": "plot"
+                }}
     )
     return resp

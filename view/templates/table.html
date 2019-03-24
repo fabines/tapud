@@ -1,57 +1,52 @@
+{% extends 'layout.html' %}
 
-<!DOCTYPE html>
-<html>
-<head>
-  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-  <meta name="robots" content="noindex">
-  <title>result plots </title>
-  <script
-  src="https://code.jquery.com/jquery-2.2.4.min.js"
-  integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
-  crossorigin="anonymous"></script>
-  <script type="text/javascript" src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-  <link rel="stylesheet" type="text/css" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.1/bootstrap-table.min.css">
-  <script type='text/javascript' src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.11.1/bootstrap-table.min.js"></script>
-  <style type='text/css'>
-    .row-index {
-      width: 50px;
-      display: inline-block;
-    }
-  </style>
+{% block body %}
+<!--<a class="btn btn-success" href="/add_article"> Add Article</a>-->
+<link href="https://unpkg.com/bootstrap-table@1.14.2/dist/bootstrap-table.min.css" rel="stylesheet">
 
-  <script type='text/javascript'>
-    $(window).load(function(){
-      var data = {{data|tojson}};
-      var columns = {{columns|tojson}};
+<script src="https://unpkg.com/bootstrap-table@1.14.2/dist/bootstrap-table.min.js"></script>
+<section id="jumbo" class="jumbotron text-center">
+    <div class="container">
+        <h1 class="jumbotron-heading nice">Plots</h1>
+        <p class="lead text-muted">Welcome {{session.username}}</p>
+    </div>
+</section>
+<div class="col-md-12">
+    <div class="card">
+        <h5 class="card-header bg-dark"></h5>
+        <div class="card-body table-responsive">
+            <table class="table table-striped table-hover" id="table"
+                    data-toggle="table"
+                    data-pagination="true"
+                    data-search="true"
+                    data-sort-name="name"
+                    data-sort-order="desc"
+                    data-page-list="[5, 10, 25, 50, 100, ALL]">
+                <thead class="thead-dark">
 
-      $(function() {
-        $('#table').bootstrapTable({ 
-          data: data,
-          columns: columns,
-        });
-
-      });
-
-    });
-  </script>
-</head>
-<body>
-  {% from "includes/_formhelpers.html" import render_field %}
-  {% include 'layout.html' %}
-  <div class="container" style="padding: 10px; ">
-    <h1>{{title}}</h1>
-    <br/>
-    <div id="toolbar"  style="background: white"></div>
-    <table style="background: white"
-      id="table"
-      data-toggle="true"
-      data-toolbar="#toolbar"
-      data-search="true"
-      data-show-columns="true"
-      data-pagination="true"
-      data-height="500">
-    </table>
-  </div>
-</body>
-</html>
+                <tr>
+                    <th scope="col">שם חלקה</th>
+                    <th scope="col">כמות דונם</th>
+                    <th scope="col">חודש זריעה</th>
+                    <th scope="col">זן</th>
+                    <th scope="col">סוג חלקה</th>
+                    <th scope="col">חיטוי</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for plot in plots %}
+                <tr>
+                    <td>{{plot.plot_name}}</td>
+                    <td>{{plot.amount}}</td>
+                    <td>{{plot.month2sow}}</td>
+                    <td>{{plot.species}}</td>
+                    <td>{{plot.type}}</td>
+                    <td>{{plot.edigan}}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+<script src="jquery.tabledit.js"></script>
+</head>
+<body>
+<div>
+
+  <h1>Edit Plots <small> Welcome {{session.username}}</small></h1>
+  <!--<a class="btn btn-success" href="/add_article"> Add Article</a>-->
+  <hr>
+  <table class="table table-striped">
+    <tr>
+      <th>ID</th>
+      <th>מספר חלקה</th>
+      <th>מספר חלקה מפורט</th>
+      <th>שם חלקת אם</th>
+      <th>שם חלקה מפורט</th>
+      <th>איזור גידול</th>
+      <th>סוג חלקה</th>
+      <th>אורגני</th>
+      <th>שטח ברוטו</th>
+      <th>מגוף השקייה</th>
+      <th>מקור מים</th>
+      <th>דונם לגידול שלחין</th>
+      <th>תיאור מיקום מדוייק</th>
+      <th>דוררת</th>
+      <th>גרב אבקי</th>
+      <th>אבנים</th>
+      <th>רגישות לקרה</th>
+      <th>חיטוי אדיגן</th>
+      <th></th>
+      <!--<th></th>-->
+    </tr>
+    {% for plot in plots %}
+      <tr>
+        <td>{{plot._id}}</td>
+        <td>{{plot[' מספר חלקה']}}</td>
+        <td>{{plot['מספר חלקה מפורט']}}</td>
+        <td>{{plot['שם חלקת אם']}}</td>
+        <td>{{plot['שם חלקה מפורט']}}</td>
+        <td>{{plot['איזור גידול']}}</td>
+        <td>{{plot['סוג חלקה']}}</td>
+        <td>{{plot['אורגני']}}</td>
+        <td>{{plot['שטח ברוטו (דונם)']}}</td>
+        <td>{{plot['מגוף השקייה']}}</td>
+        <td>{{plot['מקור מים']}}</td>
+        <td>{{plot['דונם לגידול שלחין']}}</td>
+        <td>{{plot['תיאור מיקום מדוייק']}}</td>
+        <td>{{plot['דוררת']}}</td>
+        <td>{{plot['גרב אבקי']}}</td>
+        <td>{{plot['אבנים']}}</td>
+        <td>{{plot['רגישות לקרה']}}</td>
+        <td>{{plot['חיטוי אדיגן']}}</td>
+        <!--<td><a href="edit_plot/{{plot.id}}" class="btn btn-default pull-right">Edit</a></td>-->
+      </tr>
+    {% endfor %}
+  </table>
+
+</div>
+
+
+
+
+    <script>$('#example').Tabledit({
+				editButton: false,
+                removeButton: false,
+                columns: {
+                    identifier: [0, 'id'],
+                    editable: [[1, 'First Name'],[2, 'Last Name'],[3, 'Username', '{"1": "@mdo", "2": "@fat", "3": "@twitter"}']]
+                }
+            });
+    </script>
+</body>
+</html>

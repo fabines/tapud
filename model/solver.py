@@ -13,15 +13,17 @@ sumOrg = 0
 sumNotOrg = 0
 sumSpring = 0
 sumAutumn = 0
+priorityDict = {5: "sort", 4: "doreret", 3: "garav", 2: "frost", 1: "rahatSpring",0: "rahatAutumn"}
 sumOfMonths = {}
 sumOfSpecies = {}
 listVarsPlots = {}
+BinaryVarsPlots = {}
 dictMechanicalSensitivity = {}
 dictSkinColor = {}
 
 
 def reset():
-    global model, myTuple, sumOrg, sumNotOrg, sumOfMonths, sumOfSpecies, listVarsPlots, months, species, dictMechanicalSensitivity, dictSkinColor, sumSpring, sumAutumn
+    global model, myTuple, sumOrg, sumNotOrg, sumOfMonths, sumOfSpecies, listVarsPlots, months, species, dictMechanicalSensitivity, dictSkinColor, sumSpring, sumAutumn, BinaryVarsPlots
     model.discardConcurrentEnvs()
     model.reset(0)
     model.resetParams()
@@ -34,6 +36,7 @@ def reset():
     sumOfMonths = {}
     sumOfSpecies = {}
     listVarsPlots = {}
+    BinaryVarsPlots = {}
     months = []
     species = []
     dictMechanicalSensitivity = {}
@@ -47,40 +50,93 @@ def solve(plots, orders, variety):
     result = []
     orders = sumAndSetMonths(orders)
     sumAndSetSpecies(orders)
-    combineOrder(orders)
+    orders = combineOrder(orders)
     isSensitive(variety)
     skinColor(variety)
     for plot in plots:
         name = plot['_id']
-        x = model.addVars(months, species, stav, vtype=GRB.BINARY,  name=name)
+        x = model.addVars(months, species, stav, vtype=GRB.INTEGER,  name=name)
+        y = model.addVars(2, vtype=GRB.BINARY, name=name)
         listVarsPlots[name] = x
+        BinaryVarsPlots[name] = y
     model.update()
     sumOrganic(orders)
     sumSeason(orders)
+    allocatePlotCstr(plots)
     organicCstr(plots)
     monthCstr(plots)
-    plotCstr()
+    #plotCstr()
     speciesCstr(plots)
     CstrByOrder(plots, orders)
+    CstrSort(plots, orders)
     frostCstr(plots)
+    doreretCstr(plots)
+    garavCstr(plots)
     model.optimize()
-    for v in model.getVars():
-        if v.x == 1.0:
-            name = v.varName.split('[')
-            speciesAndMonth = name[1].split(',')
-            month = speciesAndMonth[0]
-            spe = speciesAndMonth[1]
-            for plot in plots:
-                if plot['_id'] == name[0]:
-                    plot['month'] = month
-                    plot['species'] = spe
-                    result.append(plot)
-                    break
-            print(name, v.x)
+    solveAgain()
+    result=getResult(plots,result)
     model.terminate()
     model.update()
     return result
 
+def solveAgain():
+    global model
+    ifSolution = None
+    status = model.status
+    if status == GRB.UNBOUNDED:
+        print('The model cannot be solved because it is unbounded')
+        ifSolution = False
+    elif status == GRB.OPTIMAL:
+        print('The optimal objective is %g' % model.objVal)
+        ifSolution = True
+    elif status == GRB.INF_OR_UNBD and status == GRB.INFEASIBLE:
+        print('Optimization was stopped with status %d' % status)
+        ifSolution = False
+    i = len(priorityDict)
+    while not ifSolution and i >= 0:
+        toRemove = model.getConstrByName(priorityDict[i])
+        model.remove(toRemove)
+        model.optimize()
+        status = model.status
+        if status == GRB.UNBOUNDED:
+            print('The model cannot be solved because it is unbounded')
+            ifSolution = False
+        elif status == GRB.OPTIMAL:
+            print('The optimal objective is %g' % model.objVal)
+            ifSolution = True
+        elif status == GRB.INF_OR_UNBD or status == GRB.INFEASIBLE:
+            print('Optimization was stopped with status %d' % status)
+            ifSolution = False
+        i -= 1
+
+def getResult(plots,result):
+    for v in model.getVars():
+        if v.x > 1.0:
+            if '[' not in v.varName:
+                continue
+            name = v.varName.split('[')
+            speciesAndMonth = name[1].split(',')
+            month = speciesAndMonth[0]
+            spe = speciesAndMonth[1]
+            newPlot={}
+            for plot in plots:
+                if plot['_id'] == name[0]:
+                    newPlot['תיאור מיקום מדוייק'] = plot['תיאור מיקום מדוייק']
+                    newPlot['שם חלקה מפורט'] = plot['שם חלקה מפורט']
+                    newPlot['אורגני'] = plot['אורגני']
+                    newPlot['month'] = month
+                    newPlot['species'] = spe
+                    newPlot['amount'] = v.x
+                    if plot['גרב אבקי'] is not None and plot['גרב אבקי'] >= 1 and month != 9:
+                        newPlot['אדיגן'] = '60 ליטר/דונם'
+                    elif plot['דוררת'] is not None and plot['דוררת'] > 25 and month > 3:
+                        newPlot['אדיגן'] = '43 ליטר/דונם'
+                    else:
+                        newPlot['אדיגן'] = 'לא נדרש חיטוי'
+                    result.append(newPlot)
+                    break
+            print(v.varName, v.x)
+    return result
 
 def combineOrder(orders):
     toRemove = []
@@ -138,13 +194,27 @@ def sumAndSetMonths(orders):
 def sumAndSetSpecies(orders):
     global sumOfSpecies, species
     for order in orders:
-        variety = order['type']
-        if variety not in species:
-            species.append(variety)
-        if variety not in sumOfSpecies:
-            sumOfSpecies[variety] = order['amount']
+        varietyOrder = order['type']
+        if varietyOrder not in species:
+            species.append(varietyOrder)
+        if varietyOrder not in sumOfSpecies:
+            sumOfSpecies[varietyOrder] = order['amount']
         else:
-            sumOfSpecies[variety] += order['amount']
+            sumOfSpecies[varietyOrder] += order['amount']
+
+def allocatePlotCstr(plots):
+    for plot in plots:
+        constr = 0
+        name = plot['_id']
+        for (mon, spe, season), value in listVarsPlots[name].items():
+            constr += value
+        min1 = float(plot['דונם לגידול שלחין']-5)
+        max1 = float(plot['דונם לגידול שלחין'])
+        model.addConstr((BinaryVarsPlots[name][0] == 1) >> (constr == 0))
+        #model.addRange(constr, min, plot['דונם לגידול שלחין'])
+        model.addConstr((BinaryVarsPlots[name][1] == 1) >> (constr == max1))
+        #model.addConstr((listBinaryVarsPlots[name][1] == 1) >> (constr > min))
+        model.addConstr(BinaryVarsPlots[name][0] + BinaryVarsPlots[name][1] == 1)
 
 
 def organicCstr(plots):
@@ -153,25 +223,27 @@ def organicCstr(plots):
         name = plot['_id']
         if plot['אורגני'] == 'אורגני':
             for (mon, spe, season), value in listVarsPlots[name].items():
-                constr += plot['דונם לגידול שלחין'] * value
-    model.addConstr(constr >= sumOrg)
-    model.addConstr(constr <= sumOrg + 20)
+                constr += value
+    #model.addRange(constr, sumOrg, sumOrg + 5)
+    model.addConstr(constr == sumOrg, name='organic')
+    #model.addConstr(constr <= sumOrg + 5)
     constr = 0
     for plot in plots:
         name = plot['_id']
         if plot['אורגני'] == 'רגיל':
             for (mon, spe, season), value in listVarsPlots[name].items():
-                constr += plot['דונם לגידול שלחין'] * value
-    model.addConstr(constr >= sumNotOrg)
-    model.addConstr(constr <= sumNotOrg + 20)
+                constr += value
+    #model.addRange(constr, sumNotOrg, sumNotOrg+5)
+    model.addConstr(constr == sumNotOrg, name='notOrganic')
+    #model.addConstr(constr <= sumNotOrg + 5)
 
-def plotCstr():
-    for vars in listVarsPlots.values():
-        constr = 0
-        for (mon, spe, season), value in vars.items():
-            constr += value
-        # x1+x2+x3...<=1
-        model.addConstr(constr <= 1)
+# def plotCstr():
+#     for vars in listVarsPlots.values():
+#         constr = 0
+#         for (mon, spe, season), value in vars.items():
+#             constr += value
+#         # x1+x2+x3...<=1
+#         model.addConstr(constr <= 1)
 
 
 def monthCstr(plots):
@@ -181,33 +253,33 @@ def monthCstr(plots):
     for plot in plots:
         name = plot['_id']
         for (mon, spe, season), value in listVarsPlots[name].items():
-            dictCstr[mon] += plot['דונם לגידול שלחין'] * value
+            dictCstr[mon] += value
     for key, value in dictCstr.items():
-        model.addConstr(value >= sumOfMonths[key])
-        model.addConstr(value <= sumOfMonths[key] + 20)
+        #model.addRange(value, sumOfMonths[key], sumOfMonths[key]+5)
+        model.addConstr(value == sumOfMonths[key])
+        #model.addConstr(value <= sumOfMonths[key] + 5)
 
 
 def speciesCstr(plots):
     dictCstr = {}
-    for variety in species:
-        dictCstr[variety] = 0
+    for var in species:
+        dictCstr[var] = 0
     for plot in plots:
         name = plot['_id']
         for (mon, spe, season), value in listVarsPlots[name].items():
             if (dictMechanicalSensitivity[spe] == 1 or dictSkinColor[spe] == 'yellow') and plot['איזור גידול'] == 'בית קמה':
                 continue
             else:
-                dictCstr[spe] += plot['דונם לגידול שלחין'] * value
+                dictCstr[spe] += value
     for key, value in dictCstr.items():
-        model.addConstr(value >= sumOfSpecies[key])
-        model.addConstr(value <= sumOfSpecies[key] + 20)
+        #model.addRange(value, sumOfSpecies[key], sumOfSpecies[key] + 5)
+        model.addConstr(value == sumOfSpecies[key])
+        #model.addConstr(value <= sumOfSpecies[key] + 5)
 
 
 def CstrByOrder(plots, orders):
     dictCstr = {}
     i = 0
-    ctrAutumn = 0
-    ctrSpring = 0
     for order in orders:
         order['id'] = i
         dictCstr[i] = 0
@@ -218,14 +290,35 @@ def CstrByOrder(plots, orders):
             if order['organic'] is True:
                 if plot['אורגני'] == 'אורגני':
                     value = listVarsPlots[name][(order['date'], order['type'], order['stav'])]
-                    dictCstr[order['id']] += plot['דונם לגידול שלחין'] * value
+                    dictCstr[order['id']] += value
             elif plot['אורגני'] == 'רגיל':
                 value = listVarsPlots[name][(order['date'], order['type'], order['stav'])]
-                dictCstr[order['id']] += plot['דונם לגידול שלחין'] * value
+                dictCstr[order['id']] += value
 
     for key, value in dictCstr.items():
-        model.addConstr(value >= orders[key]['amount'])
-        model.addConstr(value <= orders[key]['amount'] + 20)
+        model.addRange(value, orders[key]['amount'], orders[key]['amount'] + 5)
+        #model.addConstr(value == orders[key]['amount'])
+        #model.addConstr(value <= orders[key]['amount'] + 5)
+
+
+def CstrSort(plots, orders):
+    dictCstr = {}
+    i = 0
+    for order in orders:
+        order['id'] = i
+        dictCstr[i] = 0
+        i += 1
+    for plot in plots:
+        name = plot['_id']
+        for order in orders:
+            if order['sort'] is False and plot['איזור גידול'] == 'בית קמה':
+                continue
+            else:
+                value = listVarsPlots[name][(order['date'], order['type'], order['stav'])]
+                dictCstr[order['id']] += value
+
+    for key, value in dictCstr.items():
+        model.addRange(value, orders[key]['amount'], orders[key]['amount'] + 5, name='sort')
 
 
 def RahatReservoirCstr(plots):
@@ -236,12 +329,12 @@ def RahatReservoirCstr(plots):
         if plot['מקור מים'] == 'מאגר רהט':
             for (mon, spe, season), value in listVarsPlots[name].items():
                 if season == 'autumn':
-                    ctrAutumn += plot['דונם לגידול שלחין'] * value
+                    ctrAutumn += value
                 else:
-                    ctrSpring += plot['דונם לגידול שלחין'] * value
+                    ctrSpring += value
 
-    model.addConstr(ctrAutumn <= 1500)
-    model.addConstr(ctrSpring <= 900)
+    model.addConstr(ctrAutumn <= 1500, name='rahatAutumn')
+    model.addConstr(ctrSpring <= 900, name='rahatSpring')
 
 def frostCstr(plots):
     constr = 0
@@ -251,9 +344,34 @@ def frostCstr(plots):
             if season == 'autumn' and plot['רגישות לקרה'] == 'רגיש':
                 continue
             else:
-                constr += plot['דונם לגידול שלחין'] * value
-    model.addConstr(constr >= (sumOrg + sumNotOrg))
-    model.addConstr(constr <= (sumOrg + sumNotOrg + 20))
+                constr += value
+    #model.addRange(constr, (sumOrg + sumNotOrg), (sumOrg + sumNotOrg) + 5)
+    model.addConstr(constr == (sumOrg + sumNotOrg), name='frost')
+    #model.addConstr(constr <= (sumOrg + sumNotOrg + 5))
+
+def doreretCstr(plots):
+    constr = 0
+    for plot in plots:
+        name = plot['_id']
+        for (mon, spe, season), value in listVarsPlots[name].items():
+            if plot['דוררת'] is not None and plot['דוררת'] > 25 and mon > 3:
+                continue
+            else:
+                constr += value
+    #model.addRange(constr, (sumOrg + sumNotOrg), (sumOrg + sumNotOrg) + 5)
+    model.addConstr(constr == (sumOrg + sumNotOrg), name='doreret')
+
+def garavCstr(plots):
+    constr = 0
+    for plot in plots:
+        name = plot['_id']
+        for (mon, spe, season), value in listVarsPlots[name].items():
+            if plot['גרב אבקי'] is not None and plot['גרב אבקי'] >= 1 and mon != 9:
+                continue
+            else:
+                constr += value
+    #model.addRange(constr, (sumOrg + sumNotOrg), (sumOrg + sumNotOrg) + 5)
+    model.addConstr(constr == (sumOrg + sumNotOrg), name='garav')
 
 
 def isSensitive(variety):

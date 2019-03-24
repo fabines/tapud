@@ -7,6 +7,7 @@ from cloudant.error import CloudantArgumentError
 from cloudant.query import Query
 from cloudant.result import QueryResult
 import pandas as pd
+import datetime
 
 
 
@@ -35,12 +36,15 @@ class first_try:
        # crops4years= self.get4Years(self, 2018, self.db)
         return my_database
 
-    def getPlots(self, db, orders,species):
+    def getPlots(self, db, orders, specie):
         result = []
         requiredArea=0
         for order in orders:
             requiredArea += order['amount']
-        plots = get4Years(db)
+        now = datetime.datetime.now()
+        print(now.year)
+        plots = get4Years(db, int(now.year))
+        lastYearCrops = getLastYear(db, int(now.year))
         newListPlots = []
         for plot in plots['docs']:
             newListPlots.append(plot['plot'])
@@ -54,7 +58,7 @@ class first_try:
             detailPlot = getSpecificPlot(plot, db)
             if len(detailPlot['docs']) > 0:
                 newListPlots.append(detailPlot['docs'][0])
-        result = solve(newListPlots, orders,species)
+        result = solve(newListPlots, orders, specie)
         return result
 
 

@@ -1,0 +1,68 @@
+{% extends 'layout.html' %}
+{% block body%}
+
+<button onclick="document.getElementById('id01').style.display='block'" class="w3-button w3-black">Add new variety</button>
+
+  <div id="id01" class="w3-modal">
+    <div class="w3-modal-content w3-card-4">
+      <header class="w3-container w3-teal">
+        <span onclick="document.getElementById('id01').style.display='none'"
+        class="w3-button w3-display-topright">&times;</span>
+        <h2>Modal Header</h2>
+      </header>
+      <div class="w3-container">
+             <div class="col-md-3"  style="padding-left: 40px ">
+        <form name="speForm" method="POST" action="{{ url_for('species') }}" >
+            <div class="fontbody">
+                    <label for="nameHe" style="font-size: large" class="col-lg-3 pad">Name in Hebrew</label>
+                    <input required type="text" class="form-control marg" name="nameHe" id="nameHe" placeholder="Enter name in Hebrew">
+                <label for="nameEn" style="font-size: large" class="col-lg-3 pad">Name in English</label>
+                    <input required type="text" class="form-control marg" name="nameEn" id="nameEn" placeholder="Enter name in English">
+                {{speForm.skinColor.label (class_='col-lg-3 pad' )}} {{speForm.skinColor(class_='form-control marg')}}
+                <label for="Mechanical_damage" style="font-size: large" class="col-lg-3 pad">Sensitivity to Mechanical damage</label>
+                    <input required type="number" class="form-control marg" name="Mechanical_damage" id="Mechanical_damage" placeholder="Enter number between 1 and 5">
+                <label for="Powdery_scab" style="font-size: large" class="col-lg-3 pad">Sensitivity to Powdery scab</label>
+                    <input required type="number" class="form-control marg" name="Powdery_scab" id="Powdery_scab" placeholder="Enter number between 1 and 5">
+            </div>
+
+            <div class="form-group container">
+                <input type="submit" name="submit_button" class="btn btn-info sub col-md-2" value="Add">
+            </div>
+        </form>
+    </div>
+      </div>
+      <footer class="w3-container w3-teal">
+        <p>Modal Footer</p>
+      </footer>
+    </div>
+  </div>
+
+<!--edit plot-->
+
+
+<form action="{{url_for('get_plot')}}" method="post">
+    <label for="idPlot" style="font-size: large" class="col-lg-3 pad">ID of plot</label>
+ <input required type="text" class="form-control marg" name="idPlot" id="idPlot" placeholder="Enter name in Hebrew">
+<button type="submit" name="submit_button" data-toggle="modal" data-target="#myModal" class="w3-button w3-black">Edit plot</button>
+</form>
+<div class="modal fade" id="myModal" role="dialog">
+    <div class="modal-dialog">
+
+      <!-- Modal content-->
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+          <h4 class="modal-title">Modal Header</h4>
+        </div>
+        <div class="modal-body">
+          <p>Some text in the modal.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+{% endblock %}

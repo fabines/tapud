@@ -1,5 +1,5 @@
 from flask import Flask, render_template, flash, redirect, url_for, session, request
-from wtforms import Form, RadioField, validators, IntegerField, BooleanField, SelectField
+from wtforms import Form, RadioField, validators, IntegerField, BooleanField, SelectField, StringField
 from wtforms.fields.html5 import DateField
 import calendar
 from model.main import *
@@ -26,9 +26,10 @@ listOfUsers = [
 # todo insert to controller
 
 
-def createTuppleSpecies(species):
+def createTuppleSpecies(specie):
     listTuple = []
-    for variety in species['docs']:
+    newlist = sorted(specie['docs'], key=lambda k: k['species'])
+    for variety in newlist:
         listTuple.append(tuple((variety['Variety'], variety['species'])))
     return listTuple
 
@@ -66,11 +67,19 @@ class PlotForm(Form):
     # type = StringField('Type', [validators.Length(min=4, max=25)])
     default = [('1', "select species")]
     default.extend(newSpecies)
-    variety = SelectField('variety', [validators.NoneOf(['1'], message="you must select species")], choices=default)
+    variety = SelectField('Variety', [validators.NoneOf(['1'], message="you must select species")], choices=default)
     date = DateField('Date', format='%Y-%m-%d')
     organic = BooleanField('Organic', [validators.AnyOf([True, False])])
-    stav = RadioField('Stav', [validators.DataRequired()], choices=[('spring', 'spring'), ('autumn', 'autumn')])
-    sort = RadioField('Sort', [validators.DataRequired()], choices=[('sort', 'sort'), ('Direct Harvest', 'Direct Harvest')])
+    # stav = RadioField('Stav', [validators.DataRequired()])
+    # sort = RadioField('Sort', [validators.DataRequired()])
+
+
+class SpeciesForm(Form):
+    nameHe = StringField('Name in Hebrew', [validators.required(), validators.length(max=20)])
+    nameEn = StringField('Name in English', [validators.required(), validators.length(max=20)])
+    skinColor = SelectField('skinColor', choices=[('red', 'אדום'), ('yellow', 'צהוב')])
+    Mechanical_damage = IntegerField('Mechanical damage')
+    Powdery_scab = IntegerField('Powdery scab')
 
 
 def is_logged_in(f):
@@ -113,6 +122,11 @@ columns = [
         "field": "type",
         "title": "סוג חלקה",
         "sortable": True,
+    },
+{
+        "field": "edigan",
+        "title": "חיטוי",
+        "sortable": True,
     }
 ]
 
@@ -125,10 +139,11 @@ def initTableResult(plots):
             row['plot_name']=plot['שם חלקה מפורט']+' : '+plot['תיאור מיקום מדוייק']
         else:
             row['plot_name'] = plot['שם חלקה מפורט']
-        row['amount'] = plot['דונם לגידול שלחין']
+        row['amount'] = plot['amount']
         row['month2sow'] = calendar.month_name[int(plot['month'])]
         row['species'] = plot['species']
         row['type'] = plot['אורגני']
+        row['edigan'] = plot['אדיגן']
         data.append(row)
     return data
 
@@ -138,6 +153,21 @@ def index(data):
                            data=data,
                            columns=columns,
                            title='חלקות לזריעה')
+
+
+# @app.route('/updateDB', methods=['GET', 'POST'])
+# @is_logged_in
+# def update():
+#     formSpe = SpeciesForm(request.form)
+#     return render_template('update.html', speForm=SpeciesForm())
+
+
+@app.route('/species', methods=['POST'])
+def funcSpecies():
+    formSpe = SpeciesForm(request.form)
+    if formSpe.validate():
+        print('hello')
+    return render_template('update.html', speForm=formSpe)
 
 
 # order
@@ -154,11 +184,13 @@ def order():
             order['type'] = form.variety.data
             order['date'] = form.date.data.strftime('%d-%m-%Y')
             order['organic'] = form.organic.data
-            if form.stav.data == 'autumn':
+            stav = request.form['stav']
+            sort = request.form['sort']
+            if stav == 'autumn':
                 order['stav'] = True
             else:
                 order['stav'] = False
-            if form.sort.data == 'sort':
+            if sort == 'sort':
                 order['sort'] = True
             else:
                 order['sort'] = False
@@ -168,16 +200,18 @@ def order():
             # flash('Order added successfully', 'success')
             return render_template('order.html', form=form, orders=List_input)
             # quest.form['submit_button'] == 'Submit':
-        if not List_input:
+        elif not List_input:
             flash('You must add orders', 'danger')
         else:
             i = 0
             print(List_input)
+            print(species)
             # flash('Order added successfully', 'success')
             Plots = f.getPlots(db, List_input, species)
             List_input = []
             data = initTableResult(Plots)
-            return index(data)
+            return render_template('table.html', plots=data)
+            #return index(data)
             # return render_template('plots.html', plots=Plots)
     return render_template('order.html', form=form, orders=List_input)
 
@@ -198,9 +232,33 @@ def delete_order(id):
 
     # return render_template('order.html', orders=List_input)
 
+
+@app.route('/updateDB')
+@is_logged_in
+def update():
+    plots = getAllPlots(db)
+    plots = plots['docs']
+    print(plots)
+    return render_template('updatePlot.html', plots=plots)
+
+
+class idPlotForm(Form):
+    idPlot = StringField('ID of plot', [validators.required(), validators.length(max=20)])
+
+
+@app.route('/get_plot', methods=['POST'])
+@is_logged_in
+def get_plot():
+    form = idPlotForm(request.form)
+    print(form.idPlot.data)
+    detailPlot = getSpecificPlot(form.idPlot.data, db)
+    if len(detailPlot['docs']) > 0:
+        detailPlot = detailPlot['docs'][0]
+    print(detailPlot)
+    return redirect(url_for('update') + '#myModal')
+
+
 # User login
-
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
