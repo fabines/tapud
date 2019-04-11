@@ -3,6 +3,8 @@ import os
 import json
 import pandas as pd
 from model.main import *
+from cloudant.document import Document
+
 
 # f = first_try()
 # db = f.connection_to_database()
@@ -28,12 +30,12 @@ db = my_database
 my_document = my_database.client['batya_db']
 # crops4years= self.get4Years(self, 2018, self.db)
 
-data = pd.read_csv('./resources/new table.csv', encoding='windows-1255')
-
-data_json = json.loads(data.to_json(orient='records'))
-for row in data_json:
-    print(row)
-    db.create_document(row)
+# data = pd.read_csv('./resources/new table.csv', encoding='windows-1255')
+#
+# data_json = json.loads(data.to_json(orient='records'))
+# for row in data_json:
+#     print(row)
+#     db.create_document(row)
 
 
 # data  = pd.read_csv('./resources/years.csv', encoding='windows-1255')
@@ -51,3 +53,15 @@ for row in data_json:
 #         newRow['type']='years'
 #         #print (newRow)
 #         db.create_document(newRow)
+
+species = getSpecies(db)['docs']
+# Retrieve documents where the name field is 'foo'
+selector = {'type': {'$eq': 'species'}}
+docs = db.get_query_result(selector)
+for doc in docs:
+    # Create Document object from dict
+    updated_doc = Document(db, doc['_id'])
+    print(updated_doc)
+    updated_doc['_id'] = doc['Variety']
+    updated_doc.save()
+    print(updated_doc)

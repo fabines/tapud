@@ -3,14 +3,16 @@
 {% block body %}
 <!--<a class="btn btn-success" href="/add_article"> Add Article</a>-->
 <link href="https://unpkg.com/bootstrap-table@1.14.2/dist/bootstrap-table.min.css" rel="stylesheet">
-
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" >
 <script src="https://unpkg.com/bootstrap-table@1.14.2/dist/bootstrap-table.min.js"></script>
+<script type="text/javascript" src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 <section id="jumbo" class="jumbotron text-center">
     <div class="container">
         <h1 class="jumbotron-heading nice">Plots</h1>
         <p class="lead text-muted">Welcome {{session.username}}</p>
     </div>
 </section>
+<button onclick="exportToExcel('table', 'tableResult')" class="btn btn-success">Export the result to excel file</button>
 <div class="col-md-12">
     <div class="card">
         <h5 class="card-header bg-dark"></h5>

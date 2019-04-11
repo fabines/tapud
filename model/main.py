@@ -3,6 +3,8 @@ import os
 import json
 from getFromDB import *
 from solver import *
+from cloudant.adapters import Replay429Adapter
+from cloudant.result import Result
 from cloudant.error import CloudantArgumentError
 from cloudant.query import Query
 from cloudant.result import QueryResult
@@ -24,7 +26,7 @@ class first_try:
                 user = creds['username']
                 password = creds['password']
                 url = 'https://' + creds['host']
-                client = Cloudant(user, password, url=url, connect=True, auto_renew=True)
+                client = Cloudant(user, password, url=url, connect=True, auto_renew=True, adapter=Replay429Adapter(retries=10, initialBackoff=0.01))
 
         session = client.session()
         print('Username: {0}'.format(session['userCtx']['name']))
@@ -44,7 +46,10 @@ class first_try:
         now = datetime.datetime.now()
         print(now.year)
         plots = get4Years(db, int(now.year))
+        lastYearList = []
         lastYearCrops = getLastYear(db, int(now.year))
+        for plot in lastYearCrops['docs']:
+            lastYearList.append(plot['plot'])
         newListPlots = []
         for plot in plots['docs']:
             newListPlots.append(plot['plot'])
@@ -58,7 +63,7 @@ class first_try:
             detailPlot = getSpecificPlot(plot, db)
             if len(detailPlot['docs']) > 0:
                 newListPlots.append(detailPlot['docs'][0])
-        result = solve(newListPlots, orders, specie)
+        result = solve(newListPlots, orders, specie, lastYearList, getPreferenceList(db))
         return result
 
 

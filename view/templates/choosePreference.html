@@ -1,0 +1,108 @@
+{% extends 'layout.html' %}
+
+
+{% block body %}
+{% from "includes/_formhelpers.html" import render_field %}
+<script type="text/javascript" src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+<section id="jumbo" class="jumbotron text-center">
+    <div class="container">
+        <h1 class="jumbotron-heading nice">Choose Preference</h1>
+        <p class="lead text-muted">when 1 is the least preferred and 7 is the most preferred. rank each constraint with different rank</p>
+    </div>
+</section>
+<div class="container-fluid">
+    <div class="row" id="content">
+        <div class="col-md-4">
+            <div class="card">
+                <h5 class="card-header bg-dark"></h5>
+                <div class="card-body">
+                    <form method="post" action="">
+                        <div class="form-group row">
+                            {{form.doreret.label (class_='col-sm-4 col-form-label' )}}
+                            <div class="col-sm-8">
+                                {{form.doreret(class_='form-control')}}
+                            </div>
+                        </div>
+                         <div class="form-group row">
+                            {{form.garav.label (class_='col-sm-4 col-form-label' )}}
+                            <div class="col-sm-8">
+                                {{form.garav(class_='form-control')}}
+                            </div>
+                        </div>
+                         <div class="form-group row">
+                            {{form.sort.label (class_='col-sm-4 col-form-label' )}}
+                            <div class="col-sm-8">
+                                {{form.sort(class_='form-control')}}
+                            </div>
+                        </div>
+                         <div class="form-group row">
+                            {{form.lastCrop.label (class_='col-sm-4 col-form-label' )}}
+                            <div class="col-sm-8">
+                                {{form.lastCrop(class_='form-control')}}
+                            </div>
+                        </div>
+                         <div class="form-group row">
+                            {{form.frost.label (class_='col-sm-4 col-form-label' )}}
+                            <div class="col-sm-8">
+                                {{form.frost(class_='form-control')}}
+                            </div>
+                        </div>
+                         <div class="form-group row">
+                            {{form.rahatAutumn.label (class_='col-sm-4 col-form-label' )}}
+                            <div class="col-sm-8">
+                                {{form.rahatAutumn(class_='form-control')}}
+                            </div>
+                        </div>
+                         <div class="form-group row">
+                            {{form.rahatSpring.label (class_='col-sm-4 col-form-label' )}}
+                            <div class="col-sm-8">
+                                {{form.rahatSpring(class_='form-control')}}
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <div class="col-sm-12">
+                                <button type="submit" name="submit_button" class="btn btn-dark sub" value="Add">Save
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+                <div class="col-md-8">
+            <div class="card">
+                <h5 class="card-header bg-dark"></h5>
+                <div class="card-body">
+                    <table class="table table-striped table-hover" id="table"
+                           data-toggle="table"
+                           data-pagination="true"
+                           data-search="true"
+                           data-sort-name="name"
+                           data-sort-order="desc"
+                           data-page-size="5"
+                           data-page-list="[5, 10, 25, 50, 100, ALL]">
+                        <thead class="thead-dark">
+                        <tr>
+                            <th scope="col">Constraint</th>
+                            <th scope="col">Rank</th>
+
+                        </tr>
+                        </thead>
+                        <tbody>
+                         {% for key,value in preferences.items() %}
+                        <tr>
+
+                            <td>{{value}}</td>
+                            <td>{{key}}</td>
+                        </tr>
+                         {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

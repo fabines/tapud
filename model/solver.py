@@ -13,13 +13,15 @@ sumOrg = 0
 sumNotOrg = 0
 sumSpring = 0
 sumAutumn = 0
-priorityDict = {5: "sort", 4: "doreret", 3: "garav", 2: "frost", 1: "rahatSpring",0: "rahatAutumn"}
+priorityDict = {}
+listConstraints =["lastCrop","sort","doreret","garav","frost","rahatSpring","rahatAutumn"]
 sumOfMonths = {}
 sumOfSpecies = {}
 listVarsPlots = {}
 BinaryVarsPlots = {}
 dictMechanicalSensitivity = {}
 dictSkinColor = {}
+removed = []
 
 
 def reset():
@@ -44,10 +46,11 @@ def reset():
     model.update()
 
 
-def solve(plots, orders, variety):
-    global model, months, species
+def solve(plots, orders, variety, lastYearList, priority):
+    global model, months, species, priorityDict
     reset()
     result = []
+    setPriorityDictToInt(priority)
     orders = sumAndSetMonths(orders)
     sumAndSetSpecies(orders)
     orders = combineOrder(orders)
@@ -72,16 +75,23 @@ def solve(plots, orders, variety):
     frostCstr(plots)
     doreretCstr(plots)
     garavCstr(plots)
+    RahatReservoirCstr(plots)
+    lastCropCstr(plots, lastYearList)
     model.optimize()
     solveAgain()
     result=getResult(plots,result)
     model.terminate()
     model.update()
-    return result
+    return {"result": result, "removed": removed}
 
 def solveAgain():
-    global model
+    global model,removed,listConstraints
+    lhs = None
+    sense = None
+    rhs = None
+    name = None
     ifSolution = None
+    deleted=None
     status = model.status
     if status == GRB.UNBOUNDED:
         print('The model cannot be solved because it is unbounded')
@@ -89,12 +99,39 @@ def solveAgain():
     elif status == GRB.OPTIMAL:
         print('The optimal objective is %g' % model.objVal)
         ifSolution = True
-    elif status == GRB.INF_OR_UNBD and status == GRB.INFEASIBLE:
+    elif status == GRB.INF_OR_UNBD or status == GRB.INFEASIBLE:
         print('Optimization was stopped with status %d' % status)
         ifSolution = False
     i = len(priorityDict)
-    while not ifSolution and i >= 0:
+    while not ifSolution and i >= 1:
+        if lhs is not None:
+            model.addConstr(lhs, sense, rhs, name)
+            removed.remove(name)
         toRemove = model.getConstrByName(priorityDict[i])
+        lhs = model.getRow(toRemove)
+        sense = toRemove.Sense
+        rhs = toRemove.RHS
+        name = priorityDict[i]
+        print(priorityDict[i])
+        removed.append(priorityDict[i])
+        model.remove(toRemove)
+        model.optimize()
+        status = model.status
+        if status == GRB.UNBOUNDED:
+            print('The model cannot be solved because it is unbounded')
+            ifSolution = False
+        elif status == GRB.OPTIMAL:
+            print('The optimal objective is %g' % model.objVal)
+            ifSolution = True
+        elif status == GRB.INF_OR_UNBD or status == GRB.INFEASIBLE:
+            print('Optimization was stopped with status %d' % status)
+            ifSolution = False
+        i -= 1
+    i = len(priorityDict)
+    while not ifSolution and i >= 1:
+        toRemove = model.getConstrByName(priorityDict[i])
+        print(priorityDict[i])
+        removed.append(priorityDict[i])
         model.remove(toRemove)
         model.optimize()
         status = model.status
@@ -109,6 +146,7 @@ def solveAgain():
             ifSolution = False
         i -= 1
 
+
 def getResult(plots,result):
     for v in model.getVars():
         if v.x > 1.0:
@@ -116,7 +154,9 @@ def getResult(plots,result):
                 continue
             name = v.varName.split('[')
             speciesAndMonth = name[1].split(',')
-            month = speciesAndMonth[0]
+            if ']' in speciesAndMonth[0]:
+                continue
+            month = int(speciesAndMonth[0])
             spe = speciesAndMonth[1]
             newPlot={}
             for plot in plots:
@@ -127,9 +167,9 @@ def getResult(plots,result):
                     newPlot['month'] = month
                     newPlot['species'] = spe
                     newPlot['amount'] = v.x
-                    if plot['גרב אבקי'] is not None and plot['גרב אבקי'] >= 1 and month != 9:
+                    if plot['גרב אבקי'] is not None and float(plot['גרב אבקי']) >= 1 and month != 9:
                         newPlot['אדיגן'] = '60 ליטר/דונם'
-                    elif plot['דוררת'] is not None and plot['דוררת'] > 25 and month > 3:
+                    elif plot['דוררת'] is not None and float(plot['דוררת']) > 25 and month > 3:
                         newPlot['אדיגן'] = '43 ליטר/דונם'
                     else:
                         newPlot['אדיגן'] = 'לא נדרש חיטוי'
@@ -166,7 +206,7 @@ def sumOrganic(orders):
 def sumSeason(orders):
     global sumSpring, sumAutumn
     for order in orders:
-        if order['stav']:
+        if order['stav']=='autumn':
             sumAutumn += order['amount']
         else:
             sumSpring += order['amount']
@@ -174,7 +214,10 @@ def sumSeason(orders):
 
 def sumAndSetMonths(orders):
     global sumOfMonths, months
+    i = 0
     for order in orders:
+        order['id'] = i
+        i += 1
         month = order['date'].split("-")[1]
         month = monthToPlant[month]
         order['date'] = month
@@ -208,7 +251,6 @@ def allocatePlotCstr(plots):
         name = plot['_id']
         for (mon, spe, season), value in listVarsPlots[name].items():
             constr += value
-        min1 = float(plot['דונם לגידול שלחין']-5)
         max1 = float(plot['דונם לגידול שלחין'])
         model.addConstr((BinaryVarsPlots[name][0] == 1) >> (constr == 0))
         #model.addRange(constr, min, plot['דונם לגידול שלחין'])
@@ -236,14 +278,6 @@ def organicCstr(plots):
     #model.addRange(constr, sumNotOrg, sumNotOrg+5)
     model.addConstr(constr == sumNotOrg, name='notOrganic')
     #model.addConstr(constr <= sumNotOrg + 5)
-
-# def plotCstr():
-#     for vars in listVarsPlots.values():
-#         constr = 0
-#         for (mon, spe, season), value in vars.items():
-#             constr += value
-#         # x1+x2+x3...<=1
-#         model.addConstr(constr <= 1)
 
 
 def monthCstr(plots):
@@ -296,8 +330,8 @@ def CstrByOrder(plots, orders):
                 dictCstr[order['id']] += value
 
     for key, value in dictCstr.items():
-        model.addRange(value, orders[key]['amount'], orders[key]['amount'] + 5)
-        #model.addConstr(value == orders[key]['amount'])
+        # model.addRange(value, orders[key]['amount'], orders[key]['amount'] + 5)
+        model.addConstr(value == orders[key]['amount'])
         #model.addConstr(value <= orders[key]['amount'] + 5)
 
 
@@ -318,7 +352,8 @@ def CstrSort(plots, orders):
                 dictCstr[order['id']] += value
 
     for key, value in dictCstr.items():
-        model.addRange(value, orders[key]['amount'], orders[key]['amount'] + 5, name='sort')
+        #model.addRange(value, orders[key]['amount'], orders[key]['amount'] + 5, name='sort')
+        model.addConstr(value == orders[key]['amount'], name='sort')
 
 
 def RahatReservoirCstr(plots):
@@ -349,12 +384,26 @@ def frostCstr(plots):
     model.addConstr(constr == (sumOrg + sumNotOrg), name='frost')
     #model.addConstr(constr <= (sumOrg + sumNotOrg + 5))
 
+
+def lastCropCstr(plots, lastYearList):
+    constr = 0
+    for plot in plots:
+        name = plot['_id']
+        for (mon, spe, season), value in listVarsPlots[name].items():
+            if name not in lastYearList:
+                continue
+            else:
+                constr += value
+    #model.addRange(constr, (sumOrg + sumNotOrg), (sumOrg + sumNotOrg) + 5)
+    model.addConstr(constr == (sumOrg + sumNotOrg), name='lastCrop')
+
+
 def doreretCstr(plots):
     constr = 0
     for plot in plots:
         name = plot['_id']
         for (mon, spe, season), value in listVarsPlots[name].items():
-            if plot['דוררת'] is not None and plot['דוררת'] > 25 and mon > 3:
+            if plot['דוררת'] is not None and float(plot['דוררת']) > 25 and mon > 3:
                 continue
             else:
                 constr += value
@@ -366,7 +415,7 @@ def garavCstr(plots):
     for plot in plots:
         name = plot['_id']
         for (mon, spe, season), value in listVarsPlots[name].items():
-            if plot['גרב אבקי'] is not None and plot['גרב אבקי'] >= 1 and mon != 9:
+            if plot['גרב אבקי'] is not None and float(plot['גרב אבקי']) >= 1 and mon != 9:
                 continue
             else:
                 constr += value
@@ -395,3 +444,10 @@ def skinColor(variety):
                     dictSkinColor[var['Variety']] = 'red'
             else:
                 dictSkinColor[var['Variety']] = 'notColor'
+
+
+def setPriorityDictToInt(priority):
+    global priorityDict
+    for key,value in priority.items():
+        priorityDict[int(key)] = value
+

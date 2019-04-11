@@ -7,6 +7,48 @@ from cloudant.result import QueryResult
 import pandas as pd
 
 
+def saveToHistory(db, List_input, list_View):
+    doc_exist = 'order' in db
+    if doc_exist:
+        doc = db['order']
+        doc.delete()
+    newRow = {}
+    newRow['_id'] = 'order'
+    newRow['type'] = 'lastOrder'
+    newRow['List_input'] = List_input
+    newRow['list_view'] = list_View
+    db.create_document(newRow)
+
+
+def savePreferenceList(db, preferenceList):
+    doc_exist = 'preference' in db
+    if doc_exist:
+        doc = db['preference']
+        doc.delete()
+    newRow = {}
+    newRow['_id'] = 'preference'
+    newRow['constraint'] = preferenceList
+    db.create_document(newRow)
+
+
+def getPreferenceList(db):
+    doc_exist = 'preference' in db
+    if doc_exist:
+        doc = db['preference']
+        return doc['constraint']
+    else:
+        return None
+
+
+def getHistory(db):
+    doc_exist = 'order' in db
+    if doc_exist:
+        doc = db['order']
+        return doc
+    else:
+        return None
+
+
 def getSpecificPlot(id, db):
     query = Query(db)
     resp = query(
@@ -25,20 +67,6 @@ def getSpecificPlot(id, db):
         fields=["שם חלקה מפורט", "איזור גידול", "_id","אבנים", "דונם לגידול שלחין",
                 "אורגני", "מקור מים", "דוררת", "רגישות לקרה", "תיאור מיקום מדוייק", "גרב אבקי"],
     )
-    # selector={"$and": [
-    #         {
-    #             "_id": {
-    #                 "$eq": id
-    #             }
-    #         },
-    #         {
-    #             "סוג חלקה": {
-    #                 "$eq": "שלחין"
-    #             }
-    #         }
-    #     ]}
-    # docs = db.get_query_result(selector,fields=["שם חלקה מפורט", "אזור גידול","_id" ,"אבנים",
-    #             "דונם לגידול שלחין","אורגני","מקור מים","דוררת","רגישות לקרה","גרב אבקי"])
     return resp
 
 

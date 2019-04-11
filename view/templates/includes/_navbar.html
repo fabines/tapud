@@ -13,12 +13,25 @@
                 <a class="nav-link" href="/about">About</a>
             </li>
             {% if session.logged_in %}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" id="navbarDropdown" role="button" data-toggle="dropdown"
+                   aria-haspopup="true" aria-expanded="false">
+                    Update data
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <a class="dropdown-item" href="/updateDB">Edit plots</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/addVariety">Add variety</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/choosePreference">Choose preference order</a>
+                </div>
+            </li>
+            {% endif %}
+            {% if session.logged_in %}
             <li class="nav-item">
                 <a class="nav-link" href="/order">Allocations planning</a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" href="/updateDB">Update data</a>
-            </li>
+
             {% endif %}
         </ul>
         <ul class="navbar-nav ml-auto">
